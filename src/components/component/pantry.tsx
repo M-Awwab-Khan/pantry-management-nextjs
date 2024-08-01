@@ -53,6 +53,7 @@ export function Pantry() {
     image: "",
   })
   const [showModal, setShowModal] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
   const addItem = () => {
     if (newItem.name && newItem.quantity > 0 && newItem.image) {
       setInventory([...inventory, { ...newItem, id: inventory.length + 1 }])
@@ -71,14 +72,24 @@ export function Pantry() {
       inventory.map((item) => (item.id === id && item.quantity > 0 ? { ...item, quantity: item.quantity - 1 } : item)),
     )
   }
+  const filteredInventory = inventory.filter((item) => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
   return (
     <div className="container mx-auto px-4 md:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Inventory Management</h1>
-        <Button onClick={() => setShowModal(true)}>Add Item</Button>
+      <h1 className="text-2xl font-bold">Inventory Management</h1>
+
+        <div className="flex items-center space-x-4">
+          <Input
+            placeholder="Search by item name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full max-w-xs"
+          />
+          <Button onClick={() => setShowModal(true)}>Add Item</Button>
+        </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {inventory.map((item) => (
+        {filteredInventory.map((item) => (
           <Card key={item.id}>
             <img
               src="/placeholder.svg"
@@ -91,13 +102,15 @@ export function Pantry() {
               <h3 className="text-lg font-semibold">{item.name}</h3>
               <p className="text-muted-foreground">Quantity: {item.quantity}</p>
               <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center space-x-4">
                 <Button size="sm" variant="outline" onClick={() => decreaseQuantity(item.id)}>
                   -
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => increaseQuantity(item.id)}>
                   +
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => removeItem(item.id)}>
+              </div>
+                <Button size="sm" variant="destructive" onClick={() => removeItem(item.id)}>
                   Remove
                 </Button>
               </div>
