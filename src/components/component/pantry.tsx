@@ -12,7 +12,7 @@ To read more about using these font, please visit the Next.js documentation:
 - Pages Directory: https://nextjs.org/docs/pages/building-your-application/optimizing/fonts
 **/
 "use client"
-
+import { PlusIcon, MinusIcon, Trash2, Trash } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -109,15 +109,15 @@ export function Pantry() {
               <p className="text-muted-foreground">Quantity: {item.quantity}</p>
               <div className="flex items-center justify-between mt-4">
               <div className="flex items-center space-x-4">
-                <Button size="sm" variant="outline" onClick={() => decreaseQuantity(item.id)}>
-                  -
+                <Button size="icon" variant="outline" onClick={() => decreaseQuantity(item.id)}>
+                  <MinusIcon className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => increaseQuantity(item.id)}>
-                  +
+                <Button size="icon" variant="outline" onClick={() => increaseQuantity(item.id)}>
+                  <PlusIcon className="h-4 w-4" />
                 </Button>
               </div>
                 <Button size="sm" variant="destructive" onClick={() => removeItem(item.id)}>
-                  Remove
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </CardContent>
