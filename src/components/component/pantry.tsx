@@ -13,59 +13,86 @@ To read more about using these font, please visit the Next.js documentation:
 **/
 "use client"
 import { PlusIcon, MinusIcon, Trash2, Trash } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { db } from "./firebase-auth";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 
 export function Pantry() {
-  const [inventory, setInventory] = useState([
-    {
-      id: 1,
-      name: "Widget A",
-      quantity: 50,
-      image: "/placeholder.svg",
-    },
-    {
-      id: 2,
-      name: "Widget B",
-      quantity: 25,
-      image: "/placeholder.svg",
-    },
-    {
-      id: 3,
-      name: "Widget C",
-      quantity: 10,
-      image: "/placeholder.svg",
-    },
-  ])
+  const [inventory, setInventory] = useState([])
   const [newItem, setNewItem] = useState({
     name: "",
     quantity: 0,
     image: "",
   })
+
   const [showModal, setShowModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const addItem = () => {
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
+
+  const fetchInventory = async () => {
+    const querySnapshot = await getDocs(collection(db, "inventory"));
+    const items = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    setInventory(items);
+  };
+
+  const addItem = async () => {
     if (newItem.name && newItem.quantity > 0 && newItem.image) {
-      setInventory([...inventory, { ...newItem, id: inventory.length + 1 }])
-      setNewItem({ name: "", quantity: 0, image: "" })
-      setShowModal(false)
+      const docRef = await addDoc(collection(db, "inventory"), newItem);
+      setInventory([...inventory, { ...newItem, id: docRef.id }]);
+      setNewItem({ name: "", quantity: 0, image: "" });
+      setShowModal(false);
     }
-  }
-  const removeItem = (id) => {
-    setInventory(inventory.filter((item) => item.id !== id))
-  }
-  const increaseQuantity = (id) => {
-    setInventory(inventory.map((item) => (item.id === id ? { ...item, quantity: item.quantity + 1 } : item)))
-  }
-  const decreaseQuantity = (id) => {
-    setInventory(
-      inventory.map((item) => (item.id === id && item.quantity > 0 ? { ...item, quantity: item.quantity - 1 } : item)),
-    )
-  }
+  };
+
+
+  const removeItem = async (id) => {
+    await deleteDoc(doc(db, "inventory", id));
+    setInventory(inventory.filter((item) => item.id !== id));
+  };
+
+  const increaseQuantity = async (id) => {
+    const item = inventory.find((item) => item.id === id);
+    if (item) {
+      const updatedItem = { ...item, quantity: item.quantity + 1 };
+      await updateDoc(doc(db, "inventory", id), updatedItem);
+      setInventory(
+        inventory.map((item) =>
+          item.id === id ? updatedItem : item
+        )
+      );
+    }
+  };
+
+  const decreaseQuantity = async (id) => {
+    const item = inventory.find((item) => item.id === id);
+    if (item && item.quantity > 0) {
+      const updatedItem = { ...item, quantity: item.quantity - 1 };
+      await updateDoc(doc(db, "inventory", id), updatedItem);
+      setInventory(
+        inventory.map((item) =>
+          item.id === id ? updatedItem : item
+        )
+      );
+    }
+  };
   const handleImageUpload = (e) => {
       const file = e.target.files[0];
       const reader = new FileReader();
@@ -78,7 +105,10 @@ export function Pantry() {
     };
 
 
-  const filteredInventory = inventory.filter((item) => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    const filteredInventory = inventory.filter((item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
   return (
     <div className="container mx-auto px-4 md:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -174,7 +204,7 @@ export function Pantry() {
           <DialogFooter>
             <Button onClick={addItem}>Add Item</Button>
             <div>
-              <Button variant="outline">Cancel</Button>
+            <Button variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
             </div>
           </DialogFooter>
         </DialogContent>
