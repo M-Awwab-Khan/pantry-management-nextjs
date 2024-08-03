@@ -12,7 +12,7 @@ To read more about using these font, please visit the Next.js documentation:
 - Pages Directory: https://nextjs.org/docs/pages/building-your-application/optimizing/fonts
 **/
 "use client"
-import { PlusIcon, MinusIcon, Trash2, Trash } from "lucide-react"
+import { PlusIcon, MinusIcon, Trash2, Plus, Sparkles, PackageOpen } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -39,27 +39,15 @@ function fileToGenerativePart(imageBase64) {
     { text: "Describe this image in no more than 3 words" },
     {
       inlineData: {
-        mimeType: "image/png",
+        mimeType: "image/jpeg",
         data: imageBase64,
       },
     },
   ];
 }
 
-
-// const generate = async () => {
-//   console.log(process.env.GEMINI_API_KEY)
-//   try {
-//     const prompt = "Tell me about google.";
-//     const result = await model.generateContent(prompt);
-//     const response = result.response;
-//     console.log(response.text());
-//   } catch (error) {
-//     console.log("response error", error);
-//   }
-// };
-
-// generate();
+const genAI = new GoogleGenerativeAI(`${process.env.NEXT_PUBLIC_GEMINI_API_KEY}`);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
 
 export function Pantry() {
@@ -143,12 +131,8 @@ export function Pantry() {
     );
 
     const classifyImage = async (e) => {
-      const genAI = new GoogleGenerativeAI(`${process.env.NEXT_PUBLIC_GEMINI_API_KEY}`);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-
       try {
-        console.log(process.env.NEXT_PUBLIC_GEMINI_API_KEY)
-        const promptConfig = fileToGenerativePart(newItem.image);
+        const promptConfig = fileToGenerativePart(newItem.image.split(",")[1]);
         const result = await model.generateContent({
           contents: [{ role: "user", parts: promptConfig }],
         });
@@ -253,15 +237,18 @@ export function Pantry() {
                 className="col-span-3"
               />
             </div>
-            {newItem.image && (
-            <Button onClick={classifyImage}>Classify Image</Button>
-            )}
 
           </div>
-          <DialogFooter>
-            <Button onClick={addItem}>Add Item</Button>
-            <div>
-            <Button variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
+          <DialogFooter className="sm:justify-between">
+            <Button onClick={classifyImage} disabled={!newItem.image} variant="secondary">
+                <Sparkles className="mr-2 h-4 w-4" />   Classify
+            </Button>
+
+            <div className="flex space-x-2">
+                <Button onClick={addItem}>
+                    <Plus className="mr-2 h-4 w-4" />Add
+                </Button>
+                <Button variant="outline" onClick={() => {setShowModal(false); setNewItem({ ...newItem, image: "" });}}>Cancel</Button>
             </div>
           </DialogFooter>
         </DialogContent>
