@@ -20,6 +20,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { db } from "./firebase-auth";
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+import dotenv from "dotenv";
+dotenv.config();
+
 import {
   collection,
   addDoc,
@@ -28,6 +32,35 @@ import {
   deleteDoc,
   doc,
 } from "firebase/firestore";
+
+// Converts local file information to a GoogleGenerativeAI.Part object.
+function fileToGenerativePart(imageBase64) {
+  return [
+    { text: "Describe this image in no more than 3 words" },
+    {
+      inlineData: {
+        mimeType: "image/png",
+        data: imageBase64,
+      },
+    },
+  ];
+}
+
+
+// const generate = async () => {
+//   console.log(process.env.GEMINI_API_KEY)
+//   try {
+//     const prompt = "Tell me about google.";
+//     const result = await model.generateContent(prompt);
+//     const response = result.response;
+//     console.log(response.text());
+//   } catch (error) {
+//     console.log("response error", error);
+//   }
+// };
+
+// generate();
+
 
 export function Pantry() {
   const [inventory, setInventory] = useState([])
@@ -108,6 +141,26 @@ export function Pantry() {
     const filteredInventory = inventory.filter((item) =>
       item.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const classifyImage = async (e) => {
+      const genAI = new GoogleGenerativeAI(`${process.env.NEXT_PUBLIC_GEMINI_API_KEY}`);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+      try {
+        console.log(process.env.NEXT_PUBLIC_GEMINI_API_KEY)
+        const promptConfig = fileToGenerativePart(newItem.image);
+        const result = await model.generateContent({
+          contents: [{ role: "user", parts: promptConfig }],
+        });
+
+        const response = await result.response;
+        const aiTitle = response.text();
+        setNewItem({ ...newItem, name: aiTitle });
+        console.log(aiTitle);
+      } catch (error) {
+        console.error("Error classifying image:", error);
+      }
+    }
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-8">
@@ -200,6 +253,10 @@ export function Pantry() {
                 className="col-span-3"
               />
             </div>
+            {newItem.image && (
+            <Button onClick={classifyImage}>Classify Image</Button>
+            )}
+
           </div>
           <DialogFooter>
             <Button onClick={addItem}>Add Item</Button>
