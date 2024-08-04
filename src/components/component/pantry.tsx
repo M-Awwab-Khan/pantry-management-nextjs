@@ -196,10 +196,9 @@ export function Pantry() {
       }
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-8 grid grid-cols-2 lg:grid-cols-[1fr_300px] gap-8 ">
-    <div>
-      <div className="flex items-center justify-between mb-6">
-      <h1 className="text-2xl font-bold">Pantry Management</h1>
+    <div className="container mx-auto px-4 md:px-6 py-8">
+    <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Pantry Management</h1>
 
         <div className="flex items-center space-x-4">
           <Input
@@ -212,7 +211,8 @@ export function Pantry() {
           <Button onClick={suggestRecipe}>Suggest Recipe</Button>
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    <div className="flex flex-col md:flex-row gap-8 mt-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 basis-3/4">
         {filteredInventory.map((item) => (
           <Card key={item.id}>
             <img
@@ -242,8 +242,7 @@ export function Pantry() {
           </Card>
         ))}
       </div>
-      </div>
-      <div className="bg-muted/20 rounded-lg p-4 space-y-4">
+      <div className="bg-muted/20 rounded-lg p-4 space-y-4 basis-1/4">
         <h2 className="text-lg font-semibold">Recipes</h2>
         <div className="space-y-2">
           {recipes.map((recipe) => (
@@ -263,6 +262,8 @@ export function Pantry() {
           ))}
         </div>
       </div>
+    </div>
+
 
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="sm:max-w-[425px]">
