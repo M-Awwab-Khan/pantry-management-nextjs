@@ -12,7 +12,7 @@ To read more about using these font, please visit the Next.js documentation:
 - Pages Directory: https://nextjs.org/docs/pages/building-your-application/optimizing/fonts
 **/
 "use client"
-import { PlusIcon, MinusIcon, Trash2, Plus, Sparkles, PackageOpen } from "lucide-react"
+import { PlusIcon, MinusIcon, Trash2, Plus, Sparkles, ArrowRightIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -62,11 +62,13 @@ export function Pantry() {
 
   const [showModal, setShowModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [recipeSuggestion, setRecipeSuggestion] = useState("");
   const [showRecipeModal, setShowRecipeModal] = useState(false);
+  const [recipes, setRecipes] = useState([]);
+  const [selectedRecipe, setSelectedRecipe] = useState(null)
 
   useEffect(() => {
     fetchInventory();
+    fetchRecipes();
   }, []);
 
   const fetchInventory = async () => {
@@ -153,24 +155,51 @@ export function Pantry() {
     const suggestRecipe = async () => {
       try {
         const inventoryItems = inventory.map(item => `${item.quantity}x ${item.name}`).join(", ");
-        const prompt = `Suggest a recipe using the following ingredients: ${inventoryItems}.`;
+        const prompt = `Suggest a recipe using the following ingredients: ${inventoryItems}. Make sure you give response in this format:
+        {
+            title: "Vegetable Stir-Fry",
+            excerpt: "A colorful and flavorful stir-fry with a variety of fresh vegetables and a savory sauce",
+            content: "FULL RECIPE CONTENT HERE"
+        }`;
 
         const result = await model.generateContent(prompt);
 
         const response = await result.response;
-        const recipe = response.text();
-        setRecipeSuggestion(recipe);
-        setShowRecipeModal(true);
+        let recipe = response.text();
+        recipe = JSON.parse(recipe);
+
+        // Save the generated recipe to Firestore
+        const docRef = await addDoc(collection(db, "recipes"), recipe);
+
+        // Fetch updated recipes list
+        fetchRecipes();
+
+        openRecipeModal(recipe);
       } catch (error) {
         console.error("Error suggesting recipe:", error);
       }
     };
 
+    const fetchRecipes = async () => {
+        const querySnapshot = await getDocs(collection(db, "recipes"));
+        const recipes = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setRecipes(recipes);
+      };
+
+
+    const openRecipeModal = (recipe) => {
+        setSelectedRecipe(recipe)
+        setShowRecipeModal(true)
+      }
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-8">
+    <div className="container mx-auto px-4 md:px-6 py-8 grid grid-cols-2 lg:grid-cols-[1fr_300px] gap-8 ">
+    <div>
       <div className="flex items-center justify-between mb-6">
-      <h1 className="text-2xl font-bold">Inventory Management</h1>
+      <h1 className="text-2xl font-bold">Pantry Management</h1>
 
         <div className="flex items-center space-x-4">
           <Input
@@ -213,6 +242,28 @@ export function Pantry() {
           </Card>
         ))}
       </div>
+      </div>
+      <div className="bg-muted/20 rounded-lg p-4 space-y-4">
+        <h2 className="text-lg font-semibold">Recipes</h2>
+        <div className="space-y-2">
+          {recipes.map((recipe) => (
+            <div
+              key={recipe.id}
+              className="flex items-start justify-between gap-4 hover:bg-muted/50 rounded-md p-2 transition-colors"
+            >
+              <div>
+                <h3 className="font-medium">{recipe.title}</h3>
+                <p className="text-muted-foreground text-sm line-clamp-2">{recipe.excerpt}</p>
+              </div>
+              <Button size="icon" variant="ghost" onClick={() => openRecipeModal(recipe)}>
+                <ArrowRightIcon className="w-4 h-4" />
+                <span className="sr-only">Read more</span>
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -276,17 +327,21 @@ export function Pantry() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showRecipeModal} onOpenChange={setShowRecipeModal}>
-        <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={showRecipeModal} onOpenChange={setShowRecipeModal}>
+        <DialogContent className="sm:max-w-[600px] max-h-[600px] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Recipe Suggestion</DialogTitle>
-            <DialogDescription>Here is a recipe you can make with your inventory items:</DialogDescription>
+            <DialogTitle>{selectedRecipe?.title}</DialogTitle>
           </DialogHeader>
-          <div className="py-4 scrollable-content">
-            <Markdown>{recipeSuggestion}</Markdown>
+          <div className="grid gap-4 py-4">
+            <p>{selectedRecipe?.excerpt}</p>
+            <p>
+              <Markdown>{selectedRecipe?.content}</Markdown>
+            </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRecipeModal(false)}>Close</Button>
+            <div>
+              <Button variant="outline">Close</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
