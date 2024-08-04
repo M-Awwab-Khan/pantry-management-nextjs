@@ -67,3 +67,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+.scrollable-content {
+  max-height: 300px; /* You can adjust this height as needed */
+  overflow-y: auto;
+}

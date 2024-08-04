@@ -22,6 +22,8 @@ import { Input } from "@/components/ui/input"
 import { db } from "./firebase-auth";
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 import dotenv from "dotenv";
+import Markdown from 'react-markdown'
+
 dotenv.config();
 
 import {
@@ -60,6 +62,8 @@ export function Pantry() {
 
   const [showModal, setShowModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
+  const [recipeSuggestion, setRecipeSuggestion] = useState("");
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
 
   useEffect(() => {
     fetchInventory();
@@ -146,6 +150,23 @@ export function Pantry() {
       }
     }
 
+    const suggestRecipe = async () => {
+      try {
+        const inventoryItems = inventory.map(item => `${item.quantity}x ${item.name}`).join(", ");
+        const prompt = `Suggest a recipe using the following ingredients: ${inventoryItems}.`;
+
+        const result = await model.generateContent(prompt);
+
+        const response = await result.response;
+        const recipe = response.text();
+        setRecipeSuggestion(recipe);
+        setShowRecipeModal(true);
+      } catch (error) {
+        console.error("Error suggesting recipe:", error);
+      }
+    };
+
+
   return (
     <div className="container mx-auto px-4 md:px-6 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -159,6 +180,7 @@ export function Pantry() {
             className="w-full max-w-xs"
           />
           <Button onClick={() => setShowModal(true)}>Add Item</Button>
+          <Button onClick={suggestRecipe}>Suggest Recipe</Button>
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -250,6 +272,21 @@ export function Pantry() {
                 </Button>
                 <Button variant="outline" onClick={() => {setShowModal(false); setNewItem({ ...newItem, image: "" });}}>Cancel</Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRecipeModal} onOpenChange={setShowRecipeModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Recipe Suggestion</DialogTitle>
+            <DialogDescription>Here is a recipe you can make with your inventory items:</DialogDescription>
+          </DialogHeader>
+          <div className="py-4 scrollable-content">
+            <Markdown>{recipeSuggestion}</Markdown>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRecipeModal(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
